@@ -1,0 +1,32 @@
+﻿@using Social_Media_2._0.ViewModels
+@model UserIndexViewModel
+
+<div>
+    <h1>Search for users</h1>
+
+    <form action="/Users" method="get">
+        <input type="text" name="Search" placeholder="Search" value="@Model.Search" required />
+        <input type="submit" value="Search" />
+    </form>
+
+    <hr />
+
+    <h2>Results</h2>
+
+    @if (!string.IsNullOrEmpty(Model.Search) && Model.Result.Count == 0)
+    {
+        <div class="alert alert-danger">
+            No users visible
+        </div>
+    }
+
+    else
+    {
+        @foreach (var user in Model.Result)
+        {
+            <p>
+                <a href="/Users/@user.Id">@user.Name </a>
+            </p>
+        }        
+    }
+</div>

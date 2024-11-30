@@ -1,0 +1,16 @@
+﻿@using Social_Media_2._0.ViewModels
+@model HomeRecommendedUsersViewModel
+
+<div>
+    <h1>Recommended users to follow</h1>
+
+    <ul>
+        @foreach(var user in Model.Users)
+        {
+            <li>            
+                <a href="/Users/@user.Id">@user.Name </a>
+            </li>
+        }
+    </ul>
+
+</div>
