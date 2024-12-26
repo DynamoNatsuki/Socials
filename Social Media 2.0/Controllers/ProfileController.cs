@@ -31,15 +31,21 @@ namespace Social_Media_2._0.Controllers
 
             var dbUser = await _dbContext.Users.Where(u => u.Id == user.Id).FirstOrDefaultAsync();
 
-            var listeningTo = await _dbContext.Users.Where(u => u.Id == user.Id)
+            var listeningTo = await _dbContext.Users
+                .Where(u => u.Id == user.Id)
                 .SelectMany(u => u.ListeningTo)
+                .Select(l => new UsersListenToUserViewModel
+                {
+                    UserId = l.Id,
+                    Name = l.Name
+                })
                 .ToListAsync();
 
             var viewModel = new ProfileIndexViewModel()
             {
                 Name = user.Name ?? "",
                 ProfileImageUrl = user.ProfileImagePath ?? "",
-                ListeningTo = user.ListeningTo,
+                ListeningTo = listeningTo
             };
 
             return View(viewModel);
@@ -104,7 +110,6 @@ namespace Social_Media_2._0.Controllers
                 string imagePath = $"/images/profileImages/{fileName}";
 
                 user.ProfileImagePath = imagePath ;
-                // You could also save this imagePath in the database for the user
 
                 await _userManager.UpdateAsync(user);
                 await _dbContext.SaveChangesAsync();

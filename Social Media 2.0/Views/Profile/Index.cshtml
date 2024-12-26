@@ -6,17 +6,17 @@
 
     @if (!string.IsNullOrEmpty(Model.ProfileImageUrl))
     {
-        <img src="@Model.ProfileImageUrl" alt="profile image" />   
+        <img class="profile-image" src="@Model.ProfileImageUrl" alt="profile image" />
     }
 </div>
 
 
 <div>
-    <h3>Update profile</h3>
+    <h2 class="profile-title">Update profile</h2>
 
     <form action="/Profile/Update" method="post">
         <input name="Name" value="@Model.Name" placeholder="Name" />
-        <input type="submit" value="Save" />
+        <input class="listen-button" type="submit" value="Save" />
     </form>
 
     @if (TempData["ErrorMessage"] != null)
@@ -27,24 +27,25 @@
     }
 
     <form asp-action="UploadProfilePicture" asp-controller="Profile" enctype="multipart/form-data" method="post">
-        <input type="file" name="ImageFile" />
-        <input type="hidden" name="Name" value="@Model.Name" />
-        <button type="submit">Upload Profile Picture</button>
+        <input class="listen-button" type="file" name="ImageFile" />
+        <input type="hidden" name="Name" value="@Model.Name" /> <br/>
+        <button type="submit">Upload picture</button>
     </form>
 
 
-    <h3>Following</h3>
-
-    @foreach (var ListeningTo in Model.ListeningTo)
-    {
-        <p>
-            <b>
-                <a href="/Users/@ListeningTo.Id">@ListeningTo.Name </a>
-            </b>
-        </p>
-    }
+    <h2 class="profile-title">Following</h2>
+    <div class="profile-following">
+        @foreach (var ListeningTo in Model.ListeningTo)
+        {
+            <p>
+                <a class="recommended-users" href="/Users/@ListeningTo.UserId">@ListeningTo.Name </a>
+            </p>
+        }
+    </div>
 </div>
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
+}

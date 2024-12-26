@@ -17,20 +17,20 @@ namespace Social_Media_2._0.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            // En-till-många mellan ApplicationUser och Broadcast med restriktiv kaskad
+            // One-to-many between ApplicationUser and Broadcast with restrictive cascade
             modelBuilder.Entity<Broadcast>()
                 .HasOne(b => b.User)
                 .WithMany(u => u.Broadcasts)
                 .HasForeignKey(b => b.UserId)
-                .OnDelete(DeleteBehavior.Restrict); // Förhindrar kaskadborttagning
+                .OnDelete(DeleteBehavior.Restrict); // Prevents cascading deletion
 
-            // Många-till-många mellan ApplicationUser och Followers/ListeningTo
+            // Many-to-many between ApplicationUser and Followers/ListeningTo
             modelBuilder.Entity<ApplicationUser>()
                 .HasMany(u => u.ListeningTo)
                 .WithMany(u => u.Followers)
                 .UsingEntity(j => j.ToTable("UserFollowers"));
 
-            // Många-till-många för Broadcast Likes
+            // Many-to-many for Broadcast Likes
             modelBuilder.Entity<Broadcast>()
                 .HasMany(b => b.Likes)
                 .WithMany()
