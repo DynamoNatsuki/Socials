@@ -6,7 +6,7 @@ namespace Social_Media_2._0.ViewModels
     {
         public string Search { get; set; }
         public List<ApplicationUser> Result { get; set; } = new List<ApplicationUser>();
-        //En lista måste sättas till propertyn för att vi ska kunna visa datan överhuvudtaget. Det bråkar annars om propertyn är tom. 
+        //A list must be set to the property in order for us to be able to display the data at all. Otherwise, there will be problems if the property is empty.
 
     }
 }
