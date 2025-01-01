@@ -78,27 +78,30 @@ namespace Social_Media_2._0.Controllers
         [HttpPost]
         public async Task<IActionResult> UploadProfilePicture(ImageUploadViewModel model)
         {
-            if (model.ImageFile != null && model.ImageFile.Length > 0)
+            if (model.ImageFile == null || model.ImageFile.Length == 0)
             {
-                // Validate content type
-                if (model.ImageFile.ContentType != "image/jpeg" && model.ImageFile.ContentType != "image/png")
-                {
-                    ModelState.AddModelError("ImageFile", "Only JPG and PNG images are allowed.");
-                    return View(model);
-                }
+                TempData["ErrorMessage"] = "Please select a valid file to upload.";
+                return RedirectToAction("Index");
+            }
 
-                // Validate file size (5 MB limit)
-                if (model.ImageFile.Length > 5 * 1024 * 1024)
-                {
-                    ModelState.AddModelError("ImageFile", "File size cannot exceed 5 MB.");
-                    return View(model);
-                }
+            // Validate file type and size
+            if (!IsValidImageFile(model.ImageFile, out string validationError))
+            {
+                TempData["ErrorMessage"] = validationError;
+                return RedirectToAction("Index");
+            }
 
-                // Make a unique filename to avoid conflicts
-                string fileName = $"{Guid.NewGuid()}_{model.ImageFile.FileName}";
-                string path = Path.Combine(_environment.WebRootPath, "images", "profileImages", fileName);
+            try
+            {
+                // Create a sanitized and unique file name
+                string fileName = $"{Guid.NewGuid()}_{Path.GetFileName(model.ImageFile.FileName)}";
+                string sanitizedFileName = Path.GetFileNameWithoutExtension(fileName).Replace(" ", "_") + Path.GetExtension(fileName);
+                string path = Path.Combine(_environment.WebRootPath, "images", "profileImages", sanitizedFileName);
 
-                // Save the image to wwwroot/images/profileImages
+                // Ensure the directory exists
+                Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+
+                // Save the file
                 using (var stream = new FileStream(path, FileMode.Create))
                 {
                     await model.ImageFile.CopyToAsync(stream);
@@ -106,18 +109,46 @@ namespace Social_Media_2._0.Controllers
 
                 var user = await _userManager.GetUserAsync(User);
 
-                // Generate the path to the saved file
-                string imagePath = $"/images/profileImages/{fileName}";
+                // Generate the path to the saved file for the user
+                string imagePath = $"/images/profileImages/{sanitizedFileName}";
+                user.ProfileImagePath = imagePath;
 
-                user.ProfileImagePath = imagePath ;
-
+                // Update user profile and save changes
                 await _userManager.UpdateAsync(user);
                 await _dbContext.SaveChangesAsync();
 
-                return Redirect("/");
+                return RedirectToAction("Profile");
+            }
+            catch
+            {
+                // Redirect to the profile page with an error message
+                TempData["ErrorMessage"] = "An unexpected error occurred while uploading your profile picture. Please try again.";
+                return RedirectToAction("Index");
+            }
+        }
+
+        // Helper method for validation
+        private bool IsValidImageFile(IFormFile file, out string error)
+        {
+            error = string.Empty;
+
+            // Validate MIME type
+            var allowedMimeTypes = new[] { "image/jpeg", "image/png" };
+            if (!allowedMimeTypes.Contains(file.ContentType))
+            {
+                error = "Only JPG and PNG images are allowed.";
+                return false;
             }
 
-            return BadRequest("Invalid file upload.");
+            // Validate file size (500 KB limit)
+            const long maxFileSize = 500 * 1024; // 500 KB
+            if (file.Length > maxFileSize)
+            {
+                error = "File size cannot exceed 500 KB.";
+                return false;
+            }
+
+            return true;
         }
     }
 }

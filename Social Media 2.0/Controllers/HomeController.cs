@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 using Social_Media_2._0.Data;
 using Social_Media_2._0.Models;
 using Social_Media_2._0.ViewModels;
@@ -61,49 +62,57 @@ namespace Social_Media_2._0.Controllers
         public async Task<IActionResult> Broadcast(HomeBroadcastViewModel viewModel)
         {
             var user = await _userManager.GetUserAsync(User);
-
             string imagePath = null;
 
+            // Validate the uploaded file, if any
             if (viewModel.ImageUrl != null && viewModel.ImageUrl.Length > 0)
             {
                 // Validate content type
                 if (viewModel.ImageUrl.ContentType != "image/jpeg" && viewModel.ImageUrl.ContentType != "image/png")
                 {
-                    ModelState.AddModelError("ImageUrl", "Only JPG and PNG images are allowed.");
-                    return View(viewModel);
+                    TempData["ErrorMessage"] = "Only JPG and PNG images are allowed.";
+                    return RedirectToAction("Index");
                 }
 
-                // Validate file size (5 MB limit)
-                if (viewModel.ImageUrl.Length > 5 * 1024 * 1024)
-
+                // Validate file size (500 KB limit)
+                if (viewModel.ImageUrl.Length > 500 * 1024) // 500 KB
                 {
-                    ModelState.AddModelError("ImageUrl", "File size cannot exceed 5 MB.");
-                    return View(viewModel);
+                    TempData["ErrorMessage"] = "File size cannot exceed 500 KB.";
+                    return RedirectToAction("Index");
                 }
 
-                // Make a unique filename to avoid conflicts
-                string fileName = $"{Guid.NewGuid()}_{viewModel.ImageUrl.FileName}";
-                string path = Path.Combine(_environment.WebRootPath, "images", "broadcastImages");
-
-                //Ensure the directory exists
-                if (!Directory.Exists(path))
+                try
                 {
-                    Directory.CreateDirectory(path);
+                    // Generate a unique filename to avoid conflicts
+                    string fileName = $"{Guid.NewGuid()}_{Path.GetFileName(viewModel.ImageUrl.FileName)}";
+                    string path = Path.Combine(_environment.WebRootPath, "images", "broadcastImages");
+
+                    // Ensure the directory exists
+                    if (!Directory.Exists(path))
+                    {
+                        Directory.CreateDirectory(path);
+                    }
+
+                    // Full file path
+                    string filePath = Path.Combine(path, fileName);
+
+                    // Save the image to wwwroot/images/broadcastImages
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await viewModel.ImageUrl.CopyToAsync(stream);
+                    }
+
+                    // Generate the relative path to the saved file
+                    imagePath = $"/images/broadcastImages/{fileName}";
                 }
-
-                // Full file path
-                string filePath = Path.Combine(path, fileName);
-
-                // Save the image to wwwroot/images/broadcastImages
-                using (var stream = new FileStream(filePath, FileMode.Create))
+                catch (Exception)
                 {
-                    await viewModel.ImageUrl.CopyToAsync(stream);
+                    TempData["ErrorMessage"] = "An unexpected error occurred while uploading your image. Please try again.";
+                    return RedirectToAction("Index");
                 }
-
-                // Generate the path to the saved file
-                imagePath = $"/images/broadcastImages/{fileName}";
             }
 
+            // Create a new broadcast post
             var broadcast = new Broadcast()
             {
                 Message = viewModel.Message,
@@ -122,28 +131,44 @@ namespace Social_Media_2._0.Controllers
         public async Task<IActionResult> Like([FromBody] LikeModel like)
         {
             var currentUser = await _userManager.GetUserAsync(User);
-            var post = await _dbContext.Broadcasts.Where(l => l.Id == like.PostId)
+
+            // Find the post (broadcast) being liked, including its associated Likes
+            var post = await _dbContext.Broadcasts
+                .Where(b => b.Id == like.PostId)
                 .Include(b => b.Likes)
                 .FirstOrDefaultAsync();
 
-            if (!post.Likes.Contains(currentUser))
+            bool isLiked;
+
+            // Check if the current user has already liked the post
+            if (post.Likes.Contains(currentUser))
+            {
+                post.Likes.Remove(currentUser);
+                isLiked = false;
+            }
+            else
             {
                 post.Likes.Add(currentUser);
-                await _dbContext.SaveChangesAsync();
+                isLiked = true;
             }
 
-            return Ok();
+            await _dbContext.SaveChangesAsync();
+
+            return Json(new { likeCount = post.Likes.Count, isLiked });
         }
+
 
         public async Task<IActionResult> Featured()
         {
+            // Retrieve the top 10 most popular posts based on the number of likes
             var popularPosts = await _dbContext.Broadcasts
-                .Include(u => u.User)
-                .Include(b => b.Likes)
-                .OrderByDescending(b => b.Likes.Count)
-                .Take(10)
+                .Include(u => u.User) // Include the user who created the post
+                .Include(b => b.Likes) // Include the list of likes for each post
+                .OrderByDescending(b => b.Likes.Count) // Order posts by descending like count
+                .Take(10) // Limit the results to the top 10 posts
                 .ToListAsync();
 
+            // Create a view model containing the list of popular posts
             var viewModel = new HomeIndexViewModel()
             {
                 Broadcasts = popularPosts,

@@ -29,18 +29,9 @@ button,
     cursor: pointer;
 }
 
-/*
-Add the correct font size in all browsers.
-*/
-
 small {
     font-size: 80%;
 }
-
-/*
-1. Change the font styles in all browsers.
-2. Remove default padding in all browsers.
-*/
 
 input, button {
     font-family: inherit;
@@ -127,7 +118,7 @@ h1 {
 }
 
 .broadcast-text {
-    font-size: 16px; /* Adjust font size as needed */
+    font-size: 16px;
     margin-bottom: 10px;
 }
 
@@ -153,7 +144,7 @@ h1 {
 }
 
 h2 {
-    margin: 20px;
+    margin: 20px 0 20px 0;
     border-bottom: 1px solid black;
 }
 
