@@ -6,7 +6,7 @@ namespace Social_Media_2._0.ViewModels
     {
         public string Name { get; set; }
         public string ProfileImageUrl { get; set; }
-        public ICollection<UsersListenToUserViewModel> ListeningTo { get; set; } = new List<UsersListenToUserViewModel>();
+        public ICollection<ApplicationUser> ListeningTo { get; set; } = new List<ApplicationUser>();
     }
 }
 

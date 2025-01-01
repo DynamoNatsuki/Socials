@@ -71,23 +71,23 @@ namespace Social_Media_2._0.Controllers
             var userToListenTo = await _dbContext.Users.FindAsync(viewModel.UserId);
 
 
-            // Make sure that both users exist. 
+            // Se till att båda användarna finns
             if (currentUser == null || userToListenTo == null)
             {
                 return NotFound();
             }
 
-            // Check that the "ListeningTo" relationship exists.
+            // Kontrollera om följrelationen redan finns
             var alreadyFollowing = currentUser.ListeningTo.Any(u => u.Id == userToListenTo.Id);
             if (alreadyFollowing)
             {
                 return BadRequest("Du följer redan denna användare.");
             }
 
-            // Add the ListeningTo relationship.
+            // Lägg till följrelationen
             currentUser.ListeningTo.Add(userToListenTo);
 
-            // Save changes.
+            // Spara ändringarna
             await _dbContext.SaveChangesAsync();
 
             return Redirect("/");
@@ -110,7 +110,7 @@ namespace Social_Media_2._0.Controllers
                 return NotFound();
             }
 
-            // Check if the user is in the list of people the loggedin user follows. 
+            // Dubbelkolla om användaren finns i listan över följda
             if (currentUser.ListeningTo.Contains(userToUnfollow))
             {
                 currentUser.ListeningTo.Remove(userToUnfollow);
@@ -118,6 +118,7 @@ namespace Social_Media_2._0.Controllers
                 var result = await _userManager.UpdateAsync(currentUser);
                 if (!result.Succeeded)
                 {
+                    // Hantera fel på lämpligt sätt, t.ex. genom att visa ett felmeddelande
                     return BadRequest();
                 }
 
